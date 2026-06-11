@@ -239,9 +239,6 @@ const UserManagement = () => {
     }
   };
 
-  console.log("filteredUsers", filteredUsers);
-
-
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
