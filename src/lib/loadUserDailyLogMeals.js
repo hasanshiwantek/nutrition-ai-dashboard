@@ -78,7 +78,6 @@ export async function loadAllUserDailyLogMeals(userId) {
 
     if (rows.length > 0) {
       byDate[dateKey] = rows;
-      console.log(`[daily_log meals] ${dateKey} (${rows.length} meals):`, rows);
       for (const row of rows) all.push(row);
     }
   }

@@ -11,7 +11,6 @@ const ForgotPassword = () => {
   } = useForm();
 
   const onSubmit = async (data) => {
-    console.log("Forgot password form data:", data);
   };
 
   return (

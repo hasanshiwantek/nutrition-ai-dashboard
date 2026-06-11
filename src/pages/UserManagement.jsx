@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { RefreshCw, Pencil, Trash2, Eye, MessageCircle, UtensilsCrossed } from "lucide-react";
-import { collection, doc, getDoc, getDocs, deleteDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, deleteDoc, query, getCountFromServer, where, } from "firebase/firestore";
 import { db } from "../firebase";
 import { EditUserModal } from "../components/EditUserModal";
 import { ViewUserModal } from "../components/ViewUserModal";
@@ -50,24 +50,56 @@ const UserManagement = () => {
     try {
       setPermissionDenied(false);
       const snap = await getDocs(collection(db, "users"));
-      const rows = snap.docs.map(mapUserDocument);
-      console.log("Firestore users collection:", rows);
-      console.table(
-        rows.map((r) => {
-          const sub = subscriptionFieldsFromUserDoc(r._raw ?? r);
+      const rows = await Promise.all(
+        snap.docs.map(async (docSnap) => {
+          const logsRef = collection(db, "users", docSnap.id, "daily_logs");
+          const logsSnap = await getCountFromServer(logsRef);
+          const logsCount = logsSnap.data().count;
+
+          // ✅ Current month avg meals
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = now.getMonth() + 1; // 1-based
+
+          const allLogs = await getDocs(logsRef);
+          let totalMeals = 0;
+          let daysWithMeals = 0;
+
+          await Promise.all(
+            allLogs.docs
+              .filter((logDoc) => {
+                // Filter current month docs (format: "2026-6-1" or "2026-06-01")
+                const parts = logDoc.id.split("-");
+                return Number(parts[0]) === year && Number(parts[1]) === month;
+              })
+              .map(async (logDoc) => {
+                const mealsRef = collection(
+                  db, "users", docSnap.id, "daily_logs", logDoc.id, "meals"
+                );
+                const mealsSnap = await getCountFromServer(mealsRef);
+                const count = mealsSnap.data().count;
+                if (count > 0) {
+                  totalMeals += count;
+                  daysWithMeals++;
+                }
+              })
+          );
+
+          const avgMeals = daysWithMeals > 0
+            ? (totalMeals / daysWithMeals).toFixed(1)
+            : "0";
+
+          const row = mapUserDocument(docSnap);
           return {
-            id: r.id,
-            name: r.name,
-            email: r.email,
-            trialUsed: sub.trialUsed,
-            subscriptionExpiresAt:
-              toDisplayDate(sub.subscriptionExpiresAt) ?? sub.subscriptionExpiresAt ?? "—",
-            isSubscribed: sub.isSubscribed,
-            subscriptionPlanId: sub.subscriptionPlanId ?? "—",
-            subscriptionPlanName: sub.subscriptionPlanName ?? "—",
+            ...row,
+            dailyLogsCount: logsCount,
+            avgMealsPerDay: avgMeals,     // ✅ e.g. "2.5"
+            totalMealsThisMonth: totalMeals,
+            activeDaysThisMonth: daysWithMeals,
           };
         })
       );
+      // const rows = snap.docs.map(mapUserDocument);
       setUsers(rows);
     } catch (err) {
       console.error("Firestore users read error:", err);
@@ -76,7 +108,7 @@ const UserManagement = () => {
         setFetchError(null);
         console.info(
           "Fix: Firebase Console → Firestore Database → Rules — allow authenticated reads on `users`. Example:\n" +
-            FIRESTORE_RULES_SNIPPET
+          FIRESTORE_RULES_SNIPPET
         );
       } else {
         setFetchError(err?.message || "Failed to load users.");
@@ -141,7 +173,6 @@ const UserManagement = () => {
         alert("User document not found.");
         return;
       }
-      console.log("[View] full Firestore user document:", full);
       setEditDetail(null);
       setChatUser(null);
       setMealsUser(null);
@@ -162,7 +193,6 @@ const UserManagement = () => {
         alert("User document not found.");
         return;
       }
-      console.log("[Edit] full Firestore user document:", full);
       setViewDetail(null);
       setChatUser(null);
       setMealsUser(null);
@@ -193,11 +223,9 @@ const UserManagement = () => {
 
   const handleDelete = async (user) => {
     if (!window.confirm(`Delete user "${user.name}" (${user.email})? This cannot be undone.`)) return;
-    console.log("[Delete] user row:", user);
     setLoading(true);
     try {
       await deleteDoc(doc(db, "users", user.id));
-      console.log("[Delete] Firestore deleteDoc ok:", user.id);
       setUsers((prev) => prev.filter((u) => u.id !== user.id));
       if (editDetail?.id === user.id) setEditDetail(null);
       if (viewDetail?.id === user.id) setViewDetail(null);
@@ -261,25 +289,22 @@ const UserManagement = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setFilter("all")}
-              className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                filter === "all" ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+              className={`px-3 py-2 rounded-lg text-sm font-medium ${filter === "all" ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
             >
               All
             </button>
             <button
               onClick={() => setFilter("active")}
-              className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                filter === "active" ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+              className={`px-3 py-2 rounded-lg text-sm font-medium ${filter === "active" ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
             >
               Active
             </button>
             <button
               onClick={() => setFilter("inactive")}
-              className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                filter === "inactive" ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+              className={`px-3 py-2 rounded-lg text-sm font-medium ${filter === "inactive" ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
             >
               Inactive
             </button>
@@ -296,6 +321,8 @@ const UserManagement = () => {
                 <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Status</th>
                 <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Subscription</th>
                 <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Expires at</th>
+                <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Avg meals</th>
+                <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Last login</th>
                 <th className="text-right text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Actions</th>
               </tr>
             </thead>
@@ -308,16 +335,16 @@ const UserManagement = () => {
                     <td className="px-6 py-4 text-sm text-gray-600">{user.email || "—"}</td>
                     <td className="px-6 py-4">
                       <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          user.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-200 text-gray-700"
-                        }`}
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${user.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-200 text-gray-700"
+                          }`}
                       >
                         {user.status || "—"}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       {(() => {
-                        const label = subscriptionStatusLabel(user.isSubscribed);
+                        // const label = subscriptionStatusLabel(user.isSubscribed);
+                        const label = user?.subscriptionStatus
                         const pill =
                           label === "Active"
                             ? "bg-emerald-100 text-emerald-800"
@@ -331,6 +358,12 @@ const UserManagement = () => {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                       {subscriptionExpiresLabel(user.subscriptionExpiresAt)}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                      {user.avgMealsPerDay || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                      {user.lastLogin || "N/A"}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1 flex-wrap">
@@ -416,7 +449,6 @@ const UserManagement = () => {
           detail={editDetail}
           onClose={handleCloseEditModal}
           onSaved={(updated) => {
-            console.log("[UserManagement] after save, merged row:", updated);
             setUsers((prev) =>
               prev.map((u) => (u.id === updated.id ? updated : u))
             );

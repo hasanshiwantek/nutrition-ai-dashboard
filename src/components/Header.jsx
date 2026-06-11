@@ -16,9 +16,7 @@ const Header = () => {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      console.log("Firebase signOut completed");
     } catch (err) {
-      console.log("Firebase signOut error:", err);
     }
     dispatch(logoutManual());
     setShowLogoutModal(false);

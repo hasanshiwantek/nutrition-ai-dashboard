@@ -54,6 +54,27 @@ export function subscriptionExpiresLabel(expiresAt) {
 
 /** @param {Record<string, unknown>} doc */
 export function listRowFromUserDoc(doc, id) {
+
+  console.log("doc", doc);
+  const SUBSCRIPTION_STATUS_LABELS = {
+    NEVER_SUBSCRIBED: "Not Subscribed",
+    ON_TRIAL: "Trial",
+    PAID: "Active",
+    EXPIRED: "Expired",
+  };
+  function formatSubscriptionStatus(status) {
+    return SUBSCRIPTION_STATUS_LABELS[status] || status || "Never Subscribed";
+  }
+
+  // ✅ Last login days ago
+  let lastLoginDaysAgo = "N/A";
+  if (doc.lastActive) {
+    const lastActiveMs = (doc.lastActive.seconds || doc.lastActive._seconds) * 1000;
+    const diffMs = Date.now() - lastActiveMs;
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    lastLoginDaysAgo = days === 0 ? "Today" : days === 1 ? "1 day ago" : `${days} days ago`;
+  }
+
   const active = isUserAccountActive(doc);
   const fields = accountFieldsForActive(active);
   return {
@@ -62,6 +83,8 @@ export function listRowFromUserDoc(doc, id) {
     email: doc.email ?? "—",
     status: fields.status,
     isSuspended: fields.isSuspended,
+    lastLogin: lastLoginDaysAgo,
+    subscriptionStatus: formatSubscriptionStatus(doc?.subscriptionStatus),
     ...subscriptionFieldsFromUserDoc(doc),
   };
 }

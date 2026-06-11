@@ -37,14 +37,6 @@ export const CreateUserModal = ({ onClose, editUser = null, onUserAdded }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
-    console.log("Create / edit user form:", {
-      mode: isEditMode ? "edit" : "create",
-      ...formData,
-      password: formData.password ? "[filled]" : "",
-      confirmPassword: formData.confirmPassword ? "[filled]" : "",
-    });
-
     if (!isEditMode && typeof onUserAdded === "function") {
       onUserAdded({
         id: Date.now(),

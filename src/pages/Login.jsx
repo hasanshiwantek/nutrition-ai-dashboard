@@ -41,7 +41,6 @@ const Login = () => {
   }, [isAuthenticated, navigate]);
 
   const onSubmit = async (data) => {
-    console.log("Login form data:", data);
     dispatch(setLoginLoading(true));
     try {
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
@@ -49,20 +48,11 @@ const Login = () => {
       const idToken = await fbUser.getIdToken();
       const idTokenResult = await fbUser.getIdTokenResult();
 
-      console.log("Firebase login — UserCredential:", userCredential);
-      console.log("Firebase login — user:", fbUser);
-      console.log("Firebase login — idToken:", idToken);
-      console.log("Firebase login — idTokenResult:", idTokenResult);
-
       const payload = buildAuthPayloadFromFirebaseUser(fbUser, idToken, idTokenResult);
-      console.log("Firebase login — Redux / persist payload:", payload);
       dispatch(setLoginSuccess(payload));
 
       const userData = await getCurrentUserData();
-      console.log("getCurrentUserData():", userData);
-      console.log("userData.role:", userData?.role);
     } catch (err) {
-      console.log("Firebase login error:", err);
       dispatch(setLoginError(firebaseErrMessage(err)));
     }
   };

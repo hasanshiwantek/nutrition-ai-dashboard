@@ -177,12 +177,6 @@ async function loadAllFoodChatMessages(userId) {
   }
 
   const uniqueDates = new Set(all.map((m) => String(m.dateKey ?? m.date ?? "")).filter(Boolean));
-  console.log("[food chat all]", {
-    count: all.length,
-    uniqueDays: uniqueDates.size,
-    loadSource,
-    listedFolders: keysFromList.length,
-  });
 
   return {
     messages: all,
