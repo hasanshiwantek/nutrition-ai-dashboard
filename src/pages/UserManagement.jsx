@@ -239,6 +239,7 @@ const UserManagement = () => {
     }
   };
 
+  console.log("filteredUsers", filteredUsers);
 
 
   return (
@@ -323,7 +324,7 @@ const UserManagement = () => {
                 <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Status</th>
                 <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Subscription</th>
                 <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Expires at</th>
-                <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Avg miles</th>
+                <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Avg meals</th>
                 <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Last login</th>
                 <th className="text-right text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Actions</th>
               </tr>
@@ -345,7 +346,8 @@ const UserManagement = () => {
                     </td>
                     <td className="px-6 py-4">
                       {(() => {
-                        const label = subscriptionStatusLabel(user.isSubscribed);
+                        // const label = subscriptionStatusLabel(user.isSubscribed);
+                        const label = user?.subscriptionStatus
                         const pill =
                           label === "Active"
                             ? "bg-emerald-100 text-emerald-800"

@@ -55,6 +55,17 @@ export function subscriptionExpiresLabel(expiresAt) {
 /** @param {Record<string, unknown>} doc */
 export function listRowFromUserDoc(doc, id) {
 
+  console.log("doc", doc);
+  const SUBSCRIPTION_STATUS_LABELS = {
+    NEVER_SUBSCRIBED: "Not Subscribed",
+    ON_TRIAL: "Trial",
+    PAID: "Active",
+    EXPIRED: "Expired",
+  };
+  function formatSubscriptionStatus(status) {
+    return SUBSCRIPTION_STATUS_LABELS[status] || status || "Never Subscribed";
+  }
+
   // ✅ Last login days ago
   let lastLoginDaysAgo = "N/A";
   if (doc.lastActive) {
@@ -73,6 +84,7 @@ export function listRowFromUserDoc(doc, id) {
     status: fields.status,
     isSuspended: fields.isSuspended,
     lastLogin: lastLoginDaysAgo,
+    subscriptionStatus: formatSubscriptionStatus(doc?.subscriptionStatus),
     ...subscriptionFieldsFromUserDoc(doc),
   };
 }
