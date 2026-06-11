@@ -17,7 +17,6 @@ export const EditUserModal = ({ detail, onClose, onSaved }) => {
 
   useEffect(() => {
     if (!docId) return;
-    console.log("[EditUserModal] editing user:", docId, detail);
     setName(
       String(detail.name ?? detail.displayName ?? detail.fullName ?? "")
     );
@@ -30,7 +29,6 @@ export const EditUserModal = ({ detail, onClose, onSaved }) => {
     if (!docId) return;
     const account = accountFieldsForActive(status === "active");
     const payload = { name: name.trim(), email: email.trim(), ...account };
-    console.log("[EditUserModal] save → Firestore updateDoc:", { docId, payload });
     setSaving(true);
     try {
       await updateDoc(doc(db, "users", docId), payload);

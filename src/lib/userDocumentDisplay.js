@@ -125,3 +125,37 @@ export function getPreviewKeys(detail) {
   const rest = keys.filter((k) => !ordered.has(k)).sort();
   return [...first, ...rest];
 }
+
+const LABEL_OVERRIDES = {
+  bmr: "BMR",
+  tdee: "TDEE",
+  fcmToken: "FCM Token",
+  isOnboardingComplete: "Onboarding Complete",
+  isSuspended: "Suspended",
+  isDeleted: "Deleted",
+  isSubscribed: "Subscribed",
+  lastActive: "Last Active",
+  createdAt: "Created At",
+  dailyCalories: "Daily Calories",
+  activityLevel: "Activity Level",
+  trainingDays: "Training Days",
+  heightUnit: "Height Unit",
+  subscriptionExpiresAt: "Subscription Expires At",
+  subscriptionPlan: "Subscription Plan",
+  trialUsed: "Trial Used",
+  showInNavigation: "Show In Navigation",
+  metaKeywords: "Meta Keywords",
+  metaDescription: "Meta Description",
+  searchKeywords: "Search Keywords",
+};
+
+/** @param {string} key */
+export function formatFieldLabel(key) {
+  if (LABEL_OVERRIDES[key]) return LABEL_OVERRIDES[key];
+
+  return key
+    .replace(/^is([A-Z])/, "$1")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+    .replace(/^./, (c) => c.toUpperCase());
+}

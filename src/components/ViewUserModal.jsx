@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import { formatFieldValue, getPreviewKeys } from "../lib/userDocumentDisplay";
+import { formatFieldValue, getPreviewKeys, formatFieldLabel } from "../lib/userDocumentDisplay";
 import { accountFieldsForActive, isUserAccountActive } from "../lib/userAccountState";
 
 /**
@@ -77,11 +77,10 @@ export const ViewUserModal = ({ detail: detailProp, onClose, onAccountUpdated })
           type="button"
           onClick={handleToggleAccount}
           disabled={toggling}
-          className={`shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50 ${
-            isActive
-              ? "bg-red-50 text-red-700 hover:bg-red-100 border border-red-200"
-              : "bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
-          }`}
+          className={`shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50 ${isActive
+            ? "bg-red-50 text-red-700 hover:bg-red-100 border border-red-200"
+            : "bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
+            }`}
         >
           {toggling ? "Updating…" : isActive ? "Deactivate" : "Activate"}
         </button>
@@ -92,19 +91,18 @@ export const ViewUserModal = ({ detail: detailProp, onClose, onAccountUpdated })
           <div className="mb-4 flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm">
             <span className="text-gray-500">Account:</span>
             <span
-              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                isActive ? "bg-green-100 text-green-800" : "bg-gray-200 text-gray-700"
-              }`}
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${isActive ? "bg-green-100 text-green-800" : "bg-gray-200 text-gray-700"
+                }`}
             >
               {isActive ? "Active" : "Inactive"}
             </span>
             <span className="text-gray-400">·</span>
             <span className="text-gray-600">
-              <span className="font-medium">status</span> {String(detail.status ?? "—")}
+              <span className="font-medium">Status</span> {String(detail.status ?? "—")}
             </span>
             <span className="text-gray-400">·</span>
             <span className="text-gray-600">
-              <span className="font-medium">isSuspended</span>{" "}
+              <span className="font-medium">Suspended</span>{" "}
               {detail.isSuspended === true ? "true" : detail.isSuspended === false ? "false" : "—"}
             </span>
           </div>
@@ -120,7 +118,7 @@ export const ViewUserModal = ({ detail: detailProp, onClose, onAccountUpdated })
                         ? "User ID"
                         : key === "isSuspended"
                           ? "Suspended"
-                          : key}
+                          : formatFieldLabel(key)}
                   </dt>
                   <dd className="border-gray-100 px-4 py-3 text-gray-900 break-words sm:border-b">
                     {key === "id" ? (

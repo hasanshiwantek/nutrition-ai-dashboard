@@ -2,6 +2,53 @@ import React from "react";
 import addUserIcon from "../assets/adduser-icon.svg";
 import { CreateUserModal } from "./CreateUserModal";
 
+
+
+export const getUserMonthlyMealAverage = async (userId) => {
+  if (!userId) return 0;
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth(); // 0-based
+
+  // Start and end of current month
+  const startOfMonth = new Date(year, month, 1);
+  const endOfMonth = new Date(year, month + 1, 0); // Last day of month
+
+  try {
+    // 1. Get all daily_logs for this user in current month
+    const dailyLogsRef = collection(db, "users", userId, "daily_logs");
+
+    const logsQuery = query(
+      dailyLogsRef,
+      where("date", ">=", startOfMonth),
+      where("date", "<=", endOfMonth)
+    );
+
+    const logsSnapshot = await getDocs(logsQuery);
+    const totalDaysLogged = logsSnapshot.size;
+
+    if (totalDaysLogged === 0) return 0;
+
+    // 2. Count total meals across all those daily logs
+    let totalMeals = 0;
+
+    for (const logDoc of logsSnapshot.docs) {
+      const mealsRef = collection(db, "users", userId, "daily_logs", logDoc.id, "meals");
+      const mealsCountSnap = await getCountFromServer(mealsRef);
+      totalMeals += mealsCountSnap.data().count;
+    }
+
+    // 3. Calculate average
+    const averageMeals = totalMeals / totalDaysLogged;
+
+    return Number(averageMeals.toFixed(2));
+
+  } catch (error) {
+    console.error(`Error calculating meal average for user ${userId}:`, error);
+    return 0;
+  }
+};
 const UsersSection = ({
   users = [],
   searchValue,
