@@ -1,17 +1,19 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, X } from "lucide-react";
+import { LogOut, X, User } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { logoutManual } from "../store/authSlice";
 import appLogo from "../assets/app_icon.png";
+import { AddAdminUser } from "./AddAdminUser";
 
 const Header = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showAdminUserModal, setShowAdminUserModal] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -31,8 +33,8 @@ const Header = () => {
             <div className="flex items-center gap-2 sm:gap-3">
               <img src={appLogo} alt="App logo" className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl object-contain" />
               <div className="leading-tight min-w-0">
-                <div className="text-sm font-semibold text-gray-900">Admin Portal</div>
-                <div className="text-[11px] text-gray-500">Control panel</div>
+                <div className="text-sm font-semibold text-gray-900"> Freedom Eats</div>
+                <div className="text-[11px] text-gray-500">Admin Portal</div>
               </div>
             </div>
           </Link>
@@ -54,6 +56,12 @@ const Header = () => {
             <span className="font-medium text-gray-800 text-sm max-w-[140px] truncate">{user?.name || "User"}</span>
           </Link>
           <button
+            onClick={() => setShowAdminUserModal(true)}
+            className="p-2 hover:bg-gray-100 rounded-full transition"
+          >
+            <User size={20} className="text-gray-600" />
+          </button>
+          <button
             onClick={() => setShowLogoutModal(true)}
             className="p-2 hover:bg-gray-100 rounded-full transition"
           >
@@ -61,6 +69,8 @@ const Header = () => {
           </button>
         </div>
       </header>
+
+      {showAdminUserModal && <AddAdminUser onClose={() => setShowAdminUserModal(false)} onSaved={() => setShowAdminUserModal(false)} />}
 
       {showLogoutModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex justify-center items-center z-50">

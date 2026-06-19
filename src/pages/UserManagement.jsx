@@ -13,6 +13,7 @@ import {
   subscriptionExpiresLabel,
 } from "../lib/userAccountState";
 import { toDisplayDate } from "../lib/userDocumentDisplay";
+import { useAuthGuard } from "../hooks/useAuthGuard";
 
 function mapUserDocument(docSnap) {
   const d = docSnap.data() || {};
@@ -33,6 +34,7 @@ service cloud.firestore {
 }`;
 
 const UserManagement = () => {
+  useAuthGuard()//i'm here
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
@@ -239,6 +241,7 @@ const UserManagement = () => {
     }
   };
 
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -328,7 +331,7 @@ const UserManagement = () => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredUsers.length > 0 ? (
-                filteredUsers.map((user, index) => (
+                filteredUsers.filter((item) => item._raw?.role !== "admin").map((user, index) => (
                   <tr key={user.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm text-gray-600">{index + 1}</td>
                     <td className="px-6 py-4 text-sm font-medium text-gray-800">{user.name || "—"}</td>
