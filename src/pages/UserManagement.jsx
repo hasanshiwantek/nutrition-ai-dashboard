@@ -87,8 +87,14 @@ const UserManagement = () => {
               })
           );
 
-          const avgMeals = daysWithMeals > 0
-            ? (totalMeals / daysWithMeals).toFixed(1)
+          // const avgMeals = daysWithMeals > 0
+          //   ? (totalMeals / daysWithMeals).toFixed(1)
+          //   : "0";
+
+          // change to (elapsed days)
+          const elapsedDays = now.getDate();
+          const avgMeals = elapsedDays > 0
+            ? (totalMeals / elapsedDays).toFixed(1)
             : "0";
 
           const row = mapUserDocument(docSnap);
