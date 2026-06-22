@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, X, User } from "lucide-react";
+import { LogOut, X, UserPlus  } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
@@ -59,7 +59,7 @@ const Header = () => {
             onClick={() => setShowAdminUserModal(true)}
             className="p-2 hover:bg-gray-100 rounded-full transition"
           >
-            <User size={20} className="text-gray-600" />
+            <UserPlus size={20} className="text-gray-600" />
           </button>
           <button
             onClick={() => setShowLogoutModal(true)}
