@@ -1,19 +1,20 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, X, UserPlus  } from "lucide-react";
+import { LogOut, X, UserPlus, UsersRound } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { logoutManual } from "../store/authSlice";
 import appLogo from "../assets/app_icon.png";
 import { AddAdminUser } from "./AddAdminUser";
-
+import { CreateAffiliate } from "./CreateAffiliate"; // adjust path
 const Header = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showAdminUserModal, setShowAdminUserModal] = useState(false);
+  const [showAffiliateModal, setShowAffiliateModal] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -55,11 +56,18 @@ const Header = () => {
             </div>
             <span className="font-medium text-gray-800 text-sm max-w-[140px] truncate">{user?.name || "User"}</span>
           </Link>
+
           <button
             onClick={() => setShowAdminUserModal(true)}
             className="p-2 hover:bg-gray-100 rounded-full transition"
           >
             <UserPlus size={20} className="text-gray-600" />
+          </button>
+          <button
+            onClick={() => setShowAffiliateModal(true)}
+            className="p-2 hover:bg-gray-100 rounded-full transition"
+          >
+            <UsersRound size={20} className="text-gray-600" />
           </button>
           <button
             onClick={() => setShowLogoutModal(true)}
@@ -71,6 +79,7 @@ const Header = () => {
       </header>
 
       {showAdminUserModal && <AddAdminUser onClose={() => setShowAdminUserModal(false)} onSaved={() => setShowAdminUserModal(false)} />}
+      {showAffiliateModal && <CreateAffiliate onClose={() => setShowAffiliateModal(false)} onSaved={() => setShowAffiliateModal(false)} />}
 
       {showLogoutModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex justify-center items-center z-50">
@@ -101,6 +110,7 @@ const Header = () => {
           </div>
         </div>
       )}
+
     </>
   );
 };
