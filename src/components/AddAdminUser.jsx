@@ -40,7 +40,6 @@ export const AddAdminUser = ({ onClose, onSaved }) => {
             });
             onClose();
         } catch (err) {
-            console.error("[AddAdminUser] error:", err);
             setError(err?.message || "Failed to create user. Check Cloud Function logs.");
         } finally {
             setSaving(false);

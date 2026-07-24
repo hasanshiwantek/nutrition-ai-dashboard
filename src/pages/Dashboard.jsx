@@ -47,7 +47,6 @@ const Dashboard = () => {
             </div>
             <button
               type="button"
-              onClick={() => console.log("Dashboard refresh (no API)")}
               className="border px-4 py-2 rounded-lg text-sm hover:bg-gray-50"
             >
               Refresh

@@ -88,14 +88,6 @@ export async function loadAllUserDailyLogMeals(userId) {
     return String(a.time ?? "").localeCompare(String(b.time ?? ""));
   });
 
-  console.log("[daily_log meals] SUMMARY", {
-    userId,
-    totalMeals: all.length,
-    daysWithMeals: dateKeys.filter((k) => byDate[k]?.length).length,
-    dates: Object.keys(byDate),
-  });
-  console.log("[daily_log meals] flat list:", all);
-
   return {
     meals: all,
     byDate,

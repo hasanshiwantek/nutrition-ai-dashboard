@@ -55,7 +55,6 @@ export function subscriptionExpiresLabel(expiresAt) {
 /** @param {Record<string, unknown>} doc */
 export function listRowFromUserDoc(doc, id) {
 
-  console.log("doc", doc);
   const SUBSCRIPTION_STATUS_LABELS = {
     NEVER_SUBSCRIBED: "Not Subscribed",
     ON_TRIAL: "Trial",

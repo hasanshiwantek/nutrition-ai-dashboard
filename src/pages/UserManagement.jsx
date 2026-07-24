@@ -19,7 +19,19 @@ function mapUserDocument(docSnap) {
   const d = docSnap.data() || {};
   return { ...listRowFromUserDoc(d, docSnap.id), _raw: d };
 }
-
+function mapAffiliateDocument(docSnap) {
+  const d = docSnap.data() || {};
+  return {
+    id: docSnap.id,
+    name: d.name || "",
+    email: d.email || "",
+    commissionRate: d.commissionRate || "",
+    status: d.status || "",
+    affiliateCode: d.affiliateCode || "",
+    branchLink: d.branchLink || "",
+    _raw: d,
+  };
+}
 const FIRESTORE_RULES_SNIPPET = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -32,6 +44,10 @@ service cloud.firestore {
     }
   }
 }`;
+const TABS = [
+  { key: "user", label: "User Management" },
+  { key: "affiliate", label: "Affiliate User" },
+];
 
 const UserManagement = () => {
   useAuthGuard()//i'm here
@@ -39,12 +55,16 @@ const UserManagement = () => {
   const [fetchError, setFetchError] = useState(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [users, setUsers] = useState([]);
+  const [affiliatesLoading, setAffiliatesLoading] = useState(false);
+  const [affiliatesError, setAffiliatesError] = useState(null);
+  const [affiliates, setAffiliates] = useState([]);
   const [searchValue, setSearchValue] = useState("");
   const [editDetail, setEditDetail] = useState(null);
   const [viewDetail, setViewDetail] = useState(null);
   const [chatUser, setChatUser] = useState(null);
   const [mealsUser, setMealsUser] = useState(null);
   const [filter, setFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState("user");
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -126,10 +146,28 @@ const UserManagement = () => {
       setLoading(false);
     }
   }, []);
-
+  const fetchAffiliates = useCallback(async () => {
+    setAffiliatesLoading(true);
+    setAffiliatesError(null);
+    try {
+      const snap = await getDocs(collection(db, "affiliates"));
+      const rows = snap.docs.map(mapAffiliateDocument);
+      setAffiliates(rows);
+    } catch (err) {
+      console.error("Firestore affiliates read error:", err);
+      setAffiliatesError(err?.message || "Failed to load affiliates.");
+      setAffiliates([]);
+    } finally {
+      setAffiliatesLoading(false);
+    }
+  }, []);
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  useEffect(() => {
+    fetchAffiliates();
+  }, [fetchAffiliates]);
 
   const filteredUsers = useMemo(() => {
     let list = users && users.length > 0 ? users : [];
@@ -143,6 +181,17 @@ const UserManagement = () => {
         (u.email && u.email.toLowerCase().includes(q))
     );
   }, [users, searchValue, filter]);
+
+  const filteredAffiliates = useMemo(() => {
+    let list = affiliates && affiliates.length > 0 ? affiliates : [];
+    if (!searchValue.trim()) return list;
+    const q = searchValue.toLowerCase();
+    return list.filter(
+      (u) =>
+        (u.name && u.name.toLowerCase().includes(q)) ||
+        (u.email && u.email.toLowerCase().includes(q))
+    );
+  }, [affiliates, searchValue]);
 
   const handleAccountUpdated = (updated) => {
     const row = listRowFromUserDoc(updated, updated.id);
@@ -251,10 +300,13 @@ const UserManagement = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">User Management</h1>
+        <h1 className="text-2xl font-bold text-gray-800">{activeTab === "user" ? "User Management " : "Affiliate User"}</h1>
         <div className="flex items-center gap-2">
           <button
-            onClick={fetchUsers}
+            onClick={() => {
+              fetchUsers()
+              fetchAffiliates()
+            }}
             disabled={loading}
             className="flex items-center gap-2 border px-4 py-2 rounded-lg hover:bg-gray-50 transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             title="Refresh"
@@ -267,16 +319,9 @@ const UserManagement = () => {
       {permissionDenied && (
         <div className="mb-4 bg-amber-50 border border-amber-200 text-amber-950 px-4 py-3 rounded-lg text-sm space-y-2">
           <p className="font-semibold">Firestore: Missing or insufficient permissions</p>
-          <p className="text-amber-900">
-            Pehle <strong>Firebase login</strong> karein (taake <code className="bg-amber-100 px-1 rounded">request.auth</code> mile).
-            Phir Firebase Console me <strong>Firestore → Rules</strong> par yeh allow karein (example):
-          </p>
           <pre className="text-xs bg-white border border-amber-200 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap text-gray-800">
             {FIRESTORE_RULES_SNIPPET}
           </pre>
-          <p className="text-xs text-amber-800">
-            Publish rules ke baad yahan <strong>Refresh</strong> dabayein. Edit / toggle / delete ke liye <code className="bg-amber-100 px-1 rounded">update, delete</code> allow hona chahiye; food chat ke liye <code className="bg-amber-100 px-1 rounded">users/.../food_chat_logs/.../messages</code> read.
-          </p>
         </div>
       )}
       {fetchError && !permissionDenied && (
@@ -284,8 +329,31 @@ const UserManagement = () => {
           {fetchError}
         </div>
       )}
-
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      {/* Tab bar */}
+      <div className="border-b border-gray-200 px-4">
+        <div className="flex items-center gap-6">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => {
+                setSearchValue("")
+                setActiveTab(tab.key)
+              }}
+              className={`relative py-3 text-sm font-medium transition ${activeTab === tab.key
+                ? "text-indigo-600"
+                : "text-gray-600 hover:text-gray-800"
+                }`}
+            >
+              {tab.label}
+              {activeTab === tab.key && (
+                <span className="absolute left-0 -bottom-px h-0.5 w-full bg-indigo-600 rounded-full" />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+      {activeTab === "user" ? <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
           <input
             type="text"
@@ -435,7 +503,76 @@ const UserManagement = () => {
             </tbody>
           </table>
         </div>
-      </div>
+      </div> : <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            className="w-full md:max-w-md border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">#</th>
+                <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Names</th>
+                <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Email</th>
+                <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Commission</th>
+                <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Status</th>
+                <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Code</th>
+                <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Branch Link</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredAffiliates.length > 0 ? (
+                filteredAffiliates.filter((item) => item._raw?.role !== "admin").map((user, index) => (
+                  <tr key={user.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm text-gray-600">{index + 1}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-800">{user.name || "—"}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{user.email || "—"}</td>
+                    <td className="px-6 py-4 text-sm  text-gray-800">${user.commissionRate || "0"}</td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${user.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-200 text-gray-700"
+                          }`}
+                      >
+                        {user.status || "—"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                      {user.affiliateCode || "—"}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-indigo-600">
+                      {user.branchLink ? (
+                        <a
+                          href={user.branchLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:underline break-all"
+                        >
+                          {user.branchLink}
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500 text-sm">
+                    {affiliatesLoading ? "Loading…" : "No affiliates in Firestore collection `affiliates`."}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>}
 
       {viewDetail && (
         <ViewUserModal
