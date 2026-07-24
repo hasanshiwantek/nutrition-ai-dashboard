@@ -295,7 +295,19 @@ const UserManagement = () => {
       setLoading(false);
     }
   };
-
+  const handleDeleteAffiliate = async (user) => {
+    if (!window.confirm(`Delete affiliate "${user.name}" (${user.email})? This cannot be undone.`)) return;
+    setAffiliatesLoading(true);
+    try {
+      await deleteDoc(doc(db, "affiliates", user.id));
+      setAffiliates((prev) => prev.filter((u) => u.id !== user.id));
+    } catch (err) {
+      console.error("[Delete Affiliate] error:", err);
+      alert(err?.message || "Delete failed. Add `allow delete` in Firestore rules for `affiliates`.");
+    } finally {
+      setAffiliatesLoading(false);
+    }
+  };
 
   return (
     <div>
@@ -525,6 +537,7 @@ const UserManagement = () => {
                 <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Status</th>
                 <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Code</th>
                 <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Branch Link</th>
+                <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -559,6 +572,19 @@ const UserManagement = () => {
                       ) : (
                         "—"
                       )}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-start gap-1 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteAffiliate(user)}
+                          disabled={affiliatesLoading}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
+                          title="Delete"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
