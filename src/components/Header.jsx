@@ -25,7 +25,6 @@ const Header = () => {
     setShowLogoutModal(false);
     navigate("/");
   };
-
   return (
     <>
       <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-10 relative bg-[#FFFFFF] px-6 md:px-10 py-6">
@@ -35,14 +34,14 @@ const Header = () => {
               <img src={appLogo} alt="App logo" className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl object-contain" />
               <div className="leading-tight min-w-0">
                 <div className="text-sm font-semibold text-gray-900"> Freedom Eats</div>
-                <div className="text-[11px] text-gray-500">Admin Portal</div>
+                <div className="text-[11px] text-gray-500">{user?.role == "admin" ? "Admin Portal" : "Affiliate"}</div>
               </div>
             </div>
           </Link>
-          <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+          {user?.role == "admin" && <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
             <Link to="/users" className="font-medium text-gray-700 hover:text-indigo-600 whitespace-nowrap">Users</Link>
             <Link to="/profile" className="font-medium text-gray-700 hover:text-indigo-600 whitespace-nowrap">Profile</Link>
-          </nav>
+          </nav>}
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
@@ -57,18 +56,18 @@ const Header = () => {
             <span className="font-medium text-gray-800 text-sm max-w-[140px] truncate">{user?.name || "User"}</span>
           </Link>
 
-          <button
+          {user?.role == "admin" && <button
             onClick={() => setShowAdminUserModal(true)}
             className="p-2 hover:bg-gray-100 rounded-full transition"
           >
             <UserPlus size={20} className="text-gray-600" />
-          </button>
-          <button
+          </button>}
+          {user?.role == "admin" && <button
             onClick={() => setShowAffiliateModal(true)}
             className="p-2 hover:bg-gray-100 rounded-full transition"
           >
             <UsersRound size={20} className="text-gray-600" />
-          </button>
+          </button>}
           <button
             onClick={() => setShowLogoutModal(true)}
             className="p-2 hover:bg-gray-100 rounded-full transition"

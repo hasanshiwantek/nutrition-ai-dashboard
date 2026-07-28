@@ -12,8 +12,11 @@ import UserManagement from "./pages/UserManagement";
 import OrderDetails from "./pages/OrderDetails";
 import Profile from "./pages/Profile";
 import Layout from "./components/Layout";
+import StripeSuccess from "./pages/StripeSuccess";
+import StripeRefresh from "./pages/StripeRefresh";
 import AuthSync from "./components/AuthSync";
 import "./index.css";
+
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -29,6 +32,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             <Route path="/users" element={<Layout><UserManagement /></Layout>} />
             <Route path="/order/:id" element={<Layout><OrderDetails /></Layout>} />
             <Route path="/profile" element={<Layout><Profile /></Layout>} />
+            <Route path="/stripe-success" element={<StripeSuccess />} />
+            <Route path="/stripe-refresh" element={<StripeRefresh />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <ToastContainer
