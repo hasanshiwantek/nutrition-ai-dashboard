@@ -6,11 +6,12 @@ import { getFunctions, httpsCallable } from "firebase/functions";
  * Calls the `createAffiliate` Cloud Function to create a new affiliate user.
  */
 export const CreateAffiliate = ({ onClose, onSaved }) => {
+  const [commission, setCommission] = useState("");
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [commission, setCommission] = useState("");
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -18,6 +19,9 @@ export const CreateAffiliate = ({ onClose, onSaved }) => {
 
     if (!name.trim()) return setError("Name is required.");
     if (!email.trim()) return setError("Email is required.");
+    if (!password.trim()) return setError("Password is required.");
+    if (password.length < 6)
+      return setError("Password must be at least 6 characters.");
     if (commission !== "" && isNaN(Number(commission)))
       return setError("Commission must be a valid number.");
 
@@ -32,6 +36,7 @@ export const CreateAffiliate = ({ onClose, onSaved }) => {
       const result = await createAffiliate({
         name: name.trim(),
         email: email.trim(),
+        password: password,
         commission: commissionValue,
       });
 
@@ -98,7 +103,16 @@ export const CreateAffiliate = ({ onClose, onSaved }) => {
               className="w-full mt-1 p-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
-
+          <div>
+            <label className="text-sm text-gray-600 font-medium">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="At least 6 characters"
+              className="w-full mt-1 p-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
           {/* 
           hide temparary
           */}
