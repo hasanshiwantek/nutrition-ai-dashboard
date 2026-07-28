@@ -191,10 +191,10 @@ const Affiliate = () => {
                                 padding: '2px 10px',
                                 borderRadius: '12px',
                                 fontSize: '12px',
-                                background: !payoutsEnabled ? '#d1f7d1' : '#f7d1d1',
-                                color: !payoutsEnabled ? '#137a13' : '#a11',
+                                background: payoutsEnabled ? '#d1f7d1' : '#f7d1d1',
+                                color: payoutsEnabled ? '#137a13' : '#a11',
                             }}>
-                                {!payoutsEnabled ? 'Yes' : 'No'}
+                                {payoutsEnabled ? 'Yes' : 'No'}
                             </span>
 
                         </div>
