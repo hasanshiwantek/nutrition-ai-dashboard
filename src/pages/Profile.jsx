@@ -70,7 +70,7 @@ const Profile = () => {
       <div className="w-full max-w-lg">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
-          <p className="mt-1 text-sm text-gray-500">Your admin account details</p>
+          <p className="mt-1 text-sm text-gray-500">Your {user?.role == "admin" ? "admin" : "affiliate"} account details</p>
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -88,9 +88,8 @@ const Profile = () => {
           <dl>
             <ProfileField icon={BadgeCheck} label="Email status">
               <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  emailVerified ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800"
-                }`}
+                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${emailVerified ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800"
+                  }`}
               >
                 {emailVerified ? "Verified" : "Not verified"}
               </span>
