@@ -332,6 +332,7 @@ const UserManagement = () => {
       console.error(error);
     }
   };
+
   if (user?.role == "admin") {
     return (
       <div>
@@ -599,29 +600,34 @@ const UserManagement = () => {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-start gap-1 flex-wrap">
-                          <button
-                            onClick={() =>
-                              handlePayoutRequest(
-                                user.id,
-                                user.payoutRequestId,
-                                "ACCEPT"
-                              )
-                            }
-                          >
-                            Accept
-                          </button>
+                          {user?.payoutRequestStatus === "pending" && user?.payoutRequestId && <>
+                            <button
+                              onClick={() =>
+                                handlePayoutRequest(
+                                  user.id,
+                                  user.payoutRequestId,
+                                  "ACCEPT"
+                                )
+                              }
+                              className="px-4 py-1.5 rounded-lg bg-green-700 text-white text-sm font-medium hover:bg-green-700 transition-colors duration-200"
+                            >
+                              Accept
+                            </button>
 
-                          <button
-                            onClick={() =>
-                              handlePayoutRequest(
-                                user.id,
-                                user.payoutRequestId,
-                                "REJECT"
-                              )
-                            }
-                          >
-                            Reject
-                          </button>
+                            {/* Reject Button */}
+                            <button
+                              onClick={() =>
+                                handlePayoutRequest(
+                                  user.id,
+                                  user.payoutRequestId,
+                                  "REJECT"
+                                )
+                              }
+                              className="px-4 py-1.5 rounded-lg border border-red-200 bg-white text-red-600 text-sm font-medium hover:bg-red-50 hover:border-red-300 transition-colors duration-200"
+                            >
+                              Reject
+                            </button>
+                          </>}
                           <button
                             type="button"
                             onClick={() => handleDeleteAffiliate(user)}
