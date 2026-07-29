@@ -239,29 +239,18 @@ const Affiliate = () => {
                 <Row
                     label="Payouts Enabled"
                     value={
-                        <span style={{
-                            padding: '2px 10px',
-                            borderRadius: '12px',
-                            fontSize: '12px',
-                            background: payoutsEnabled ? '#d1f7d1' : '#f7d1d1',
-                            color: payoutsEnabled ? '#137a13' : '#a11',
-                        }}>
-                            {payoutsEnabled ? 'Yes' : 'No'}
-                        </span>
-                    }
-                />
-                <Row
-                    label="Status"
-                    value={
-                        <span style={{
-                            padding: '2px 10px',
-                            borderRadius: '12px',
-                            fontSize: '12px',
-                            background: affiliate.status === 'active' ? '#d1f7d1' : '#f7d1d1',
-                            color: affiliate.status === 'active' ? '#137a13' : '#a11',
-                        }}>
-                            {affiliate.status || '-'}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{
+                                padding: '2px 10px',
+                                borderRadius: '12px',
+                                fontSize: '12px',
+                                background: payoutsEnabled ? '#d1f7d1' : '#f7d1d1',
+                                color: payoutsEnabled ? '#137a13' : '#a11',
+                            }}>
+                                {payoutsEnabled ? 'Yes' : 'No'}
+                            </span>
+
+                        </div>
                     }
                 />
             </div>
@@ -352,6 +341,17 @@ const btnPrimary = {
     border: 'none',
     background: '#635bff',
     color: '#fff',
+    fontSize: '13px',
+    fontWeight: 500,
+    cursor: 'pointer',
+}
+
+const btnDanger = {
+    padding: '6px 14px',
+    borderRadius: '8px',
+    border: '1px solid #f7d1d1',
+    background: '#fff',
+    color: '#a11',
     fontSize: '13px',
     fontWeight: 500,
     cursor: 'pointer',
