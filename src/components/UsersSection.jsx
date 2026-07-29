@@ -2,8 +2,6 @@ import React from "react";
 import addUserIcon from "../assets/adduser-icon.svg";
 import { CreateUserModal } from "./CreateUserModal";
 
-
-
 export const getUserMonthlyMealAverage = async (userId) => {
   if (!userId) return 0;
 

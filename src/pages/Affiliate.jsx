@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { doc, getDoc } from 'firebase/firestore'
+import React, { useEffect, useState, useCallback } from 'react'
+import { doc, getDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore'
 import { onAuthStateChanged } from 'firebase/auth'
 import { httpsCallable } from 'firebase/functions'
 import { db, auth, functions } from '../firebase'
@@ -11,6 +11,12 @@ const Affiliate = () => {
     const [error, setError] = useState('')
     const [connecting, setConnecting] = useState(false)
 
+    // Referrals state
+    const [referrals, setReferrals] = useState([])
+    const [referralsLoading, setReferralsLoading] = useState(false)
+    const [referralsError, setReferralsError] = useState(null)
+
+    // Fetch affiliate data
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (!currentUser) {
@@ -30,7 +36,6 @@ const Affiliate = () => {
                     setError("No affiliate record found for this user")
                 }
             } catch (err) {
-                console.error("Error fetching affiliate:", err)
                 setError("Failed to load affiliate")
             } finally {
                 setLoading(false)
@@ -39,6 +44,47 @@ const Affiliate = () => {
 
         return () => unsubscribe()
     }, [])
+
+    // Fetch referrals (same style as your users fetch)
+    const fetchReferrals = useCallback(async (affiliateId) => {
+        if (!affiliateId) {
+            setReferrals([])
+            return
+        }
+
+        setReferralsLoading(true)
+        setReferralsError(null)
+
+        try {
+            const q = query(
+                collection(db, "affiliate_referrals"),
+                where("affiliateId", "==", affiliateId)
+                // orderBy("createdAt", "desc")
+            )
+
+            const snapshot = await getDocs(q)
+
+            const rows = snapshot.docs.map((docSnap) => ({
+                id: docSnap.id,
+                ...docSnap.data(),
+            }))
+
+            setReferrals(rows)
+        } catch (err) {
+
+            setReferralsError(err?.message || "Failed to load referrals")
+            setReferrals([])
+        } finally {
+            setReferralsLoading(false)
+        }
+    }, [])
+
+    // Call fetchReferrals when affiliate is loaded
+    useEffect(() => {
+        if (affiliate?.id) {
+            fetchReferrals(affiliate.id)
+        }
+    }, [affiliate?.id, fetchReferrals])
 
     const handleConnectStripe = async () => {
         setConnecting(true)
@@ -94,11 +140,52 @@ const Affiliate = () => {
 
     const stripeConnected = affiliate.stripe_settings?.stripeConnected
     const payoutsEnabled = affiliate.stripe_settings?.payoutsEnabled && affiliate?.canRequestPayout
-    console.log(affiliate);
+
+    const formatDate = (timestamp) => {
+        if (!timestamp) return '-'
+        const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp)
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        })
+    }
+    const getStatusBadge = (status) => {
+        const isConverted = status === 'converted'
+        return (
+            <span style={{
+                padding: '3px 10px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: 500,
+                background: isConverted ? '#d1f7d1' : '#fef3c7',
+                color: isConverted ? '#137a13' : '#92400e',
+            }}>
+                {status || '-'}
+            </span>
+        )
+    }
+
+    const getSubStatusBadge = (status) => {
+        if (!status) return <span style={{ color: '#9ca3af' }}>-</span>
+        const isActive = status === 'ACTIVE'
+        return (
+            <span style={{
+                padding: '3px 10px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: 500,
+            }}>
+                {status}
+            </span>
+        )
+    }
 
     return (
         <div>
-            {/* ===== Metric Cards (like screenshot) ===== */}
+            {/* ===== Metric Cards ===== */}
             <div style={metricsGrid}>
                 {/* Active Subscribers */}
                 <div style={metricCard}>
@@ -129,7 +216,6 @@ const Affiliate = () => {
                 </div>
 
                 {/* Total Earned */}
-                {/* Total Earned */}
                 <div style={metricCard}>
                     <div style={metricHeader}>
                         <div style={{ ...iconCircle, background: '#ecfdf5' }}>
@@ -140,10 +226,30 @@ const Affiliate = () => {
                         <span style={metricLabel}>Total Earned</span>
                     </div>
 
-                    {/* Value + Button side by side */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                         <div style={metricValue}>
                             ${Number(affiliate.totalEarned ?? 0).toFixed(2)}
+                        </div>
+
+                    </div>
+
+                    <div style={metricSub}>↑ Lifetime earnings</div>
+                </div>
+                <div style={metricCard}>
+                    <div style={metricHeader}>
+                        <div style={{ ...iconCircle, background: '#ecfdf5' }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+
+                                <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="#ea580c" />
+
+                            </svg>
+                        </div>
+                        <span style={metricLabel}>Available Balance</span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                        <div style={metricValue}>
+                            ${Number(affiliate?.availableBalance ?? 0).toFixed(2)}
                         </div>
 
                         {payoutsEnabled && (
@@ -156,29 +262,56 @@ const Affiliate = () => {
                                     flexShrink: 0,
                                 }}
                                 onClick={handleRequestPayout}
-                                disabled={requestingPayout}
+                                disabled={requestingPayout || Number(affiliate?.availableBalance) == 0}
                             >
                                 {requestingPayout ? 'Loading...' : 'Payout'}
                             </button>
                         )}
                     </div>
 
-                    <div style={{ ...metricSub, }}>↑ Lifetime earnings</div>
+                    <div style={metricSub}>Ready to withdraw</div>
                 </div>
 
                 {/* Available Balance */}
-                <div style={metricCard}>
+                {/* <div style={metricCard}>
+
                     <div style={metricHeader}>
-                        <div style={{ ...iconCircle, background: '#fff7ed' }}>
+
+                        <div style={{ ...iconCircle, background: '#ecfdf5' }}>
+
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+
                                 <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="#ea580c" />
+
                             </svg>
+
                         </div>
+
                         <span style={metricLabel}>Available Balance</span>
+
                     </div>
-                    <div style={metricValue}>${Number(affiliate.availableBalance ?? 0).toFixed(2)}</div>
+
+
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+
+                        <div style={metricValue}>
+
+                            ${Number(affiliate.availableBalance ?? 0).toFixed(2)}
+
+                        </div>
+
+
+
+                    </div>
+
+
+
                     <div style={metricSub}>Ready to withdraw</div>
-                </div>
+
+                </div> */}
+
+
 
                 {/* Paid Balance */}
                 <div style={metricCard}>
@@ -197,18 +330,24 @@ const Affiliate = () => {
 
             {/* ===== Details Card ===== */}
             <div style={{ ...cardStyle, marginTop: '24px' }}>
-                {affiliate.branchLink && <Row label="Branch Link" value={<a
-                    href={affiliate.branchLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:underline break-all text-blue-600"
-                >
-                    {affiliate.branchLink}
-                </a>} />}
-                {/* <Row label="Email" value={affiliate.email || '-'} /> */}
+                {affiliate.branchLink && (
+                    <Row
+                        label="Branch Link"
+                        value={
+                            <a
+                                href={affiliate.branchLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }}
+                            >
+                                {affiliate.branchLink}
+                            </a>
+                        }
+                    />
+                )}
 
                 <Row label="Affiliate Code" value={affiliate.affiliateCode || '-'} />
-                {/* Stripe Connected */}
+
                 <Row
                     label="Stripe Connected"
                     value={
@@ -235,24 +374,82 @@ const Affiliate = () => {
                     }
                 />
 
-                {/* Payouts Enabled */}
                 <Row
                     label="Payouts Enabled"
                     value={
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span style={{
-                                padding: '2px 10px',
-                                borderRadius: '12px',
-                                fontSize: '12px',
-                                background: payoutsEnabled ? '#d1f7d1' : '#f7d1d1',
-                                color: payoutsEnabled ? '#137a13' : '#a11',
-                            }}>
-                                {payoutsEnabled ? 'Yes' : 'No'}
-                            </span>
-
-                        </div>
+                        <span style={{
+                            padding: '2px 10px',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            background: affiliate.stripe_settings?.payoutsEnabled ? '#d1f7d1' : '#f7d1d1',
+                            color: affiliate.stripe_settings?.payoutsEnabled ? '#137a13' : '#a11',
+                        }}>
+                            {affiliate.stripe_settings?.payoutsEnabled ? 'Yes' : 'No'}
+                        </span>
                     }
                 />
+            </div>
+
+            {/* ===== Referrals Table ===== */}
+            <div style={{ ...cardStyle, marginTop: '24px', padding: '0' }}>
+                <div style={{
+                    padding: '16px 20px',
+                    borderBottom: '1px solid #eee',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                }}>
+                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                        Referrals
+                    </h3>
+                    <span style={{ fontSize: '13px', color: '#6b7280' }}>
+                        {referrals.length} total
+                    </span>
+                </div>
+
+                {referralsLoading ? (
+                    <div style={{ padding: '32px', textAlign: 'center', color: '#6b7280' }}>
+                        Loading referrals...
+                    </div>
+                ) : referralsError ? (
+                    <div style={{ padding: '32px', textAlign: 'center', color: '#b91c1c' }}>
+                        {referralsError}
+                    </div>
+                ) : referrals.length === 0 ? (
+                    <div style={{ padding: '32px', textAlign: 'center', color: '#6b7280' }}>
+                        No referrals yet
+                    </div>
+                ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                            <thead>
+                                <tr style={{ background: '#f9fafb', textAlign: 'left' }}>
+                                    <th style={thStyle}>User</th>
+                                    <th style={thStyle}>Email</th>
+                                    <th style={thStyle}>Subscription</th>
+                                    <th style={thStyle}>Created</th>
+                                    <th style={thStyle}>Last Commission</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {referrals?.map((ref) => (
+                                    <tr key={ref.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                        <td style={tdStyle}>
+                                            <div style={{ fontWeight: 500 }}>{ref.referredUserName || '-'}</div>
+                                            <div style={{ fontSize: '11px', color: '#9ca3af' }}>
+                                                {ref?.referredUserId?.slice(0, 8)}…
+                                            </div>
+                                        </td>
+                                        <td style={tdStyle}>{ref.referredUserEmail || '-'}</td>
+                                        <td style={tdStyle}>{getSubStatusBadge(ref.subscriptionStatus)}</td>
+                                        <td style={tdStyle}>{formatDate(ref.createdAt)}</td>
+                                        <td style={tdStyle}>{formatDate(ref.lastCommissionAt)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
         </div>
     )
@@ -346,15 +543,20 @@ const btnPrimary = {
     cursor: 'pointer',
 }
 
-const btnDanger = {
-    padding: '6px 14px',
-    borderRadius: '8px',
-    border: '1px solid #f7d1d1',
-    background: '#fff',
-    color: '#a11',
-    fontSize: '13px',
-    fontWeight: 500,
-    cursor: 'pointer',
+const thStyle = {
+    padding: '12px 16px',
+    fontWeight: 600,
+    color: '#6b7280',
+    fontSize: '12px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.03em',
+    whiteSpace: 'nowrap',
+}
+
+const tdStyle = {
+    padding: '14px 16px',
+    color: '#374151',
+    verticalAlign: 'middle',
 }
 
 export default Affiliate
