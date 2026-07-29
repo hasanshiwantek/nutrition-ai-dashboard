@@ -74,6 +74,14 @@ const UserManagement = () => {
   const [mealsUser, setMealsUser] = useState(null);
   const [filter, setFilter] = useState("all");
   const [activeTab, setActiveTab] = useState("user");
+  const [payoutModal, setPayoutModal] = useState({
+    open: false,
+    affiliateId: null,
+    requestId: null,
+    amount: null,
+    loading: false,
+    action: null, // "ACCEPT" | "REJECT"
+  });
   const { user } = useSelector((state) => state.auth);
 
   const fetchUsers = useCallback(async () => {
@@ -207,7 +215,61 @@ const UserManagement = () => {
     setUsers((prev) => prev.map((u) => (u.id === updated.id ? { ...u, ...row, _raw: updated } : u)));
     setViewDetail((prev) => (prev?.id === updated.id ? { ...prev, ...updated } : prev));
   };
+  const openPayoutModal = async (affiliateId, requestId, action) => {
+    setPayoutModal({
+      open: true,
+      affiliateId,
+      requestId,
+      amount: null,
+      loading: true,
+      action,
+    });
 
+    try {
+      const requestRef = doc(
+        db,
+        "affiliate_payout_requests",
+        affiliateId,
+        "requests",
+        requestId
+      );
+
+      const snap = await getDoc(requestRef);
+
+      if (snap.exists()) {
+        const data = snap.data();
+
+
+        setPayoutModal((prev) => ({
+          ...prev,
+          amount: data.amount ?? data.requestedAmount ?? 0, // adjust field name if different
+          loading: false,
+        }));
+      } else {
+        setPayoutModal((prev) => ({
+          ...prev,
+          amount: null,
+          loading: false,
+        }));
+        alert("Payout request not found");
+      }
+    } catch (err) {
+      console.error("Failed to fetch payout request:", err);
+      setPayoutModal((prev) => ({ ...prev, loading: false }));
+      alert("Failed to load request details");
+    }
+  };
+
+  const closePayoutModal = () => {
+    setPayoutModal({
+      open: false,
+      affiliateId: null,
+      requestId: null,
+      amount: null,
+      loading: false,
+      action: null,
+    });
+  };
   const handleCloseEditModal = () => {
     setEditDetail(null);
   };
@@ -315,27 +377,105 @@ const UserManagement = () => {
       setAffiliatesLoading(false);
     }
   };
-  const handlePayoutRequest = async (affiliateId, requestId, action) => {
+  // const handlePayoutRequest = async (affiliateId, requestId, action) => {
+  //   try {
+  //     const respondAffiliatePayoutRequest = httpsCallable(
+  //       functions,
+  //       "respondAffiliatePayoutRequest"
+  //     );
+  //     const result = await respondAffiliatePayoutRequest({
+  //       affiliateId,
+  //       requestId,
+  //       action,
+  //     });
+
+  //     await fetchAffiliates();
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // };
+  const handlePayoutRequest = async () => {
+    const { affiliateId, requestId, action } = payoutModal;
+    if (!affiliateId || !requestId || !action) return;
+
     try {
+      setPayoutModal((prev) => ({ ...prev, loading: true }));
+
       const respondAffiliatePayoutRequest = httpsCallable(
         functions,
         "respondAffiliatePayoutRequest"
       );
-      const result = await respondAffiliatePayoutRequest({
+
+      await respondAffiliatePayoutRequest({
         affiliateId,
         requestId,
         action,
       });
 
-      await fetchAffiliates();
+      closePayoutModal();
+      await fetchAffiliates(); // refresh list
     } catch (error) {
       console.error(error);
+      alert(error?.message || "Something went wrong");
+      setPayoutModal((prev) => ({ ...prev, loading: false }));
     }
   };
-
   if (user?.role == "admin") {
     return (
       <div>
+        {payoutModal.open && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {payoutModal.action === "ACCEPT" ? "Accept Payout Request" : "Reject Payout Request"}
+              </h3>
+
+              {payoutModal.loading ? (
+                <p className="text-gray-500 py-6 text-center">Loading amount...</p>
+              ) : (
+                <>
+                  <p className="text-gray-600 mb-4">
+                    {payoutModal.action === "ACCEPT"
+                      ? "Are you sure you want to accept this payout?"
+                      : "Are you sure you want to reject this payout?"}
+                  </p>
+
+                  <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                    <p className="text-sm text-gray-500">Amount</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      ${Number(payoutModal.amount || 0).toFixed(2)}
+                    </p>
+                  </div>
+                </>
+              )}
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={closePayoutModal}
+                  disabled={payoutModal.loading}
+                  className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={handlePayoutRequest}
+                  disabled={payoutModal.loading}
+                  className={`px-4 py-2 rounded-lg text-white font-medium ${payoutModal.action === "ACCEPT"
+                    ? "bg-green-700 hover:bg-green-800"
+                    : "bg-red-600 hover:bg-red-700"
+                    } disabled:opacity-50`}
+                >
+                  {payoutModal.loading
+                    ? "Processing..."
+                    : payoutModal.action === "ACCEPT"
+                      ? "Confirm Accept"
+                      : "Confirm Reject"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">{activeTab === "user" ? "User Management " : "Affiliate User"}</h1>
           <div className="flex items-center gap-2">
@@ -602,13 +742,14 @@ const UserManagement = () => {
                         <div className="flex items-center justify-start gap-1 flex-wrap">
                           {user?.payoutRequestStatus === "pending" && user?.payoutRequestId && <>
                             <button
-                              onClick={() =>
-                                handlePayoutRequest(
-                                  user.id,
-                                  user.payoutRequestId,
-                                  "ACCEPT"
-                                )
-                              }
+                              // onClick={() =>
+                              //   handlePayoutRequest(
+                              //     user.id,
+                              //     user.payoutRequestId,
+                              //     "ACCEPT"
+                              //   )
+                              // }
+                              onClick={() => openPayoutModal(user.id, user.payoutRequestId, "ACCEPT")}
                               className="px-4 py-1.5 rounded-lg bg-green-700 text-white text-sm font-medium hover:bg-green-700 transition-colors duration-200"
                             >
                               Accept
@@ -616,13 +757,14 @@ const UserManagement = () => {
 
                             {/* Reject Button */}
                             <button
-                              onClick={() =>
-                                handlePayoutRequest(
-                                  user.id,
-                                  user.payoutRequestId,
-                                  "REJECT"
-                                )
-                              }
+                              // onClick={() =>
+                              //   handlePayoutRequest(
+                              //     user.id,
+                              //     user.payoutRequestId,
+                              //     "REJECT"
+                              //   )
+                              // }
+                              onClick={() => openPayoutModal(user.id, user.payoutRequestId, "REJECT")}
                               className="px-4 py-1.5 rounded-lg border border-red-200 bg-white text-red-600 text-sm font-medium hover:bg-red-50 hover:border-red-300 transition-colors duration-200"
                             >
                               Reject
