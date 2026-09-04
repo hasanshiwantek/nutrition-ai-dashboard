@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { RefreshCw, Pencil, Trash2, Eye, MessageCircle, UtensilsCrossed } from "lucide-react";
-import { collection, doc, getDoc, getDocs, deleteDoc, query, getCountFromServer, where, } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, deleteDoc, query, getCountFromServer, where, updateDoc } from "firebase/firestore";
 import { db, functions } from "../firebase";
 import { EditUserModal } from "../components/EditUserModal";
 import { ViewUserModal } from "../components/ViewUserModal";
@@ -82,6 +82,7 @@ const UserManagement = () => {
     loading: false,
     action: null, // "ACCEPT" | "REJECT"
   });
+  const [togglingExemptId, setTogglingExemptId] = useState(null);
   const { user } = useSelector((state) => state.auth);
 
   const fetchUsers = useCallback(async () => {
@@ -291,7 +292,65 @@ const UserManagement = () => {
     const data = snap.data() || {};
     return { id: snap.id, ...data };
   };
+  // const handleToggleExempt = async (userId, nextValue) => {
 
+
+  //   const prevUsers = users;
+  //   setTogglingExemptId(userId);
+
+  //   setUsers((prev) =>
+  //     prev.map((u) =>
+  //       u.id === userId
+  //         ? {
+  //           ...u,
+  //           isExemptFromSubscription: nextValue,
+  //           _raw: { ...(u._raw || {}), isExemptFromSubscription: nextValue },
+  //         }
+  //         : u
+  //     )
+  //   );
+
+  //   try {
+  //     await updateDoc(doc(db, "users", userId), {
+  //       isExemptFromSubscription: nextValue,
+  //     });
+  //   } catch (err) {
+  //     console.error("[Toggle exempt] error:", err);
+  //     setUsers(prevUsers);
+  //     alert(err?.message || "Failed to update exemption.");
+  //   } finally {
+  //     setTogglingExemptId(null);
+  //   }
+  // };
+
+  const handleToggleExempt = async (userId, nextValue) => {
+    const prevUsers = users;
+    setTogglingExemptId(userId);
+
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === userId
+          ? {
+            ...u,
+            isExemptFromSubscription: nextValue,
+            _raw: { ...(u._raw || {}), isExemptFromSubscription: nextValue },
+          }
+          : u
+      )
+    );
+
+    try {
+      await updateDoc(doc(db, "users", userId), {
+        isExemptFromSubscription: nextValue,
+      });
+    } catch (err) {
+      console.error("[Toggle exempt] error:", err);
+      setUsers(prevUsers);
+      alert(err?.message || "Failed to update exemption.");
+    } finally {
+      setTogglingExemptId(null);
+    }
+  };
   const handleView = async (user) => {
     setLoading(true);
     try {
@@ -420,6 +479,7 @@ const UserManagement = () => {
       setPayoutModal((prev) => ({ ...prev, loading: false }));
     }
   };
+
   if (user?.role == "admin") {
     return (
       <div>
@@ -577,6 +637,7 @@ const UserManagement = () => {
                   <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Expires at</th>
                   <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Avg meals</th>
                   <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Last login</th>
+                  <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Exempt Subscription</th>
                   <th className="text-right text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Actions</th>
                 </tr>
               </thead>
@@ -619,6 +680,31 @@ const UserManagement = () => {
                       <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                         {user.lastLogin || "N/A"}
                       </td>
+                      {/* <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                        {user.isExemptFromSubscription}
+                      </td> */}
+                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                        {(() => {
+                          const isExempt = !!user._raw?.isExemptFromSubscription;
+                          return (
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={isExempt}
+                              disabled={loading || togglingExemptId === user.id}
+                              onClick={() => handleToggleExempt(user.id, !isExempt)}
+                              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${isExempt ? "bg-indigo-600" : "bg-gray-200"
+                                }`}
+                            >
+                              <span
+                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isExempt ? "translate-x-5" : "translate-x-0"
+                                  }`}
+                              />
+                            </button>
+                          );
+                        })()}
+                      </td>
+
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1 flex-wrap">
                           <button
