@@ -1,6 +1,23 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { RefreshCw, Pencil, Trash2, Eye, MessageCircle, UtensilsCrossed } from "lucide-react";
-import { collection, doc, getDoc, getDocs, deleteDoc, query, getCountFromServer, where, updateDoc } from "firebase/firestore";
+import {
+  RefreshCw,
+  Pencil,
+  Trash2,
+  Eye,
+  MessageCircle,
+  UtensilsCrossed,
+} from "lucide-react";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  deleteDoc,
+  query,
+  getCountFromServer,
+  where,
+  updateDoc,
+} from "firebase/firestore";
 import { db, functions } from "../firebase";
 import { EditUserModal } from "../components/EditUserModal";
 import { ViewUserModal } from "../components/ViewUserModal";
@@ -59,7 +76,7 @@ const TABS = [
 ];
 
 const UserManagement = () => {
-  useAuthGuard()//i'm here
+  useAuthGuard(); //i'm here
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
@@ -115,7 +132,12 @@ const UserManagement = () => {
               })
               .map(async (logDoc) => {
                 const mealsRef = collection(
-                  db, "users", docSnap.id, "daily_logs", logDoc.id, "meals"
+                  db,
+                  "users",
+                  docSnap.id,
+                  "daily_logs",
+                  logDoc.id,
+                  "meals",
                 );
                 const mealsSnap = await getCountFromServer(mealsRef);
                 const count = mealsSnap.data().count;
@@ -123,7 +145,7 @@ const UserManagement = () => {
                   totalMeals += count;
                   daysWithMeals++;
                 }
-              })
+              }),
           );
 
           // const avgMeals = daysWithMeals > 0
@@ -132,19 +154,18 @@ const UserManagement = () => {
 
           // change to (elapsed days)
           const elapsedDays = now.getDate();
-          const avgMeals = elapsedDays > 0
-            ? (totalMeals / elapsedDays).toFixed(1)
-            : "0";
+          const avgMeals =
+            elapsedDays > 0 ? (totalMeals / elapsedDays).toFixed(1) : "0";
 
           const row = mapUserDocument(docSnap);
           return {
             ...row,
             dailyLogsCount: logsCount,
-            avgMealsPerDay: avgMeals,     // ✅ e.g. "2.5"
+            avgMealsPerDay: avgMeals, // ✅ e.g. "2.5"
             totalMealsThisMonth: totalMeals,
             activeDaysThisMonth: daysWithMeals,
           };
-        })
+        }),
       );
       // const rows = snap.docs.map(mapUserDocument);
       setUsers(rows);
@@ -155,7 +176,7 @@ const UserManagement = () => {
         setFetchError(null);
         console.info(
           "Fix: Firebase Console → Firestore Database → Rules — allow authenticated reads on `users`. Example:\n" +
-          FIRESTORE_RULES_SNIPPET
+            FIRESTORE_RULES_SNIPPET,
         );
       } else {
         setFetchError(err?.message || "Failed to load users.");
@@ -190,13 +211,14 @@ const UserManagement = () => {
   const filteredUsers = useMemo(() => {
     let list = users && users.length > 0 ? users : [];
     if (filter === "active") list = list.filter((u) => u.status === "active");
-    if (filter === "inactive") list = list.filter((u) => u.status === "inactive");
+    if (filter === "inactive")
+      list = list.filter((u) => u.status === "inactive");
     if (!searchValue.trim()) return list;
     const q = searchValue.toLowerCase();
     return list.filter(
       (u) =>
         (u.name && u.name.toLowerCase().includes(q)) ||
-        (u.email && u.email.toLowerCase().includes(q))
+        (u.email && u.email.toLowerCase().includes(q)),
     );
   }, [users, searchValue, filter]);
 
@@ -207,14 +229,20 @@ const UserManagement = () => {
     return list.filter(
       (u) =>
         (u.name && u.name.toLowerCase().includes(q)) ||
-        (u.email && u.email.toLowerCase().includes(q))
+        (u.email && u.email.toLowerCase().includes(q)),
     );
   }, [affiliates, searchValue]);
 
   const handleAccountUpdated = (updated) => {
     const row = listRowFromUserDoc(updated, updated.id);
-    setUsers((prev) => prev.map((u) => (u.id === updated.id ? { ...u, ...row, _raw: updated } : u)));
-    setViewDetail((prev) => (prev?.id === updated.id ? { ...prev, ...updated } : prev));
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === updated.id ? { ...u, ...row, _raw: updated } : u,
+      ),
+    );
+    setViewDetail((prev) =>
+      prev?.id === updated.id ? { ...prev, ...updated } : prev,
+    );
   };
   const openPayoutModal = async (affiliateId, requestId, action) => {
     setPayoutModal({
@@ -232,14 +260,13 @@ const UserManagement = () => {
         "affiliate_payout_requests",
         affiliateId,
         "requests",
-        requestId
+        requestId,
       );
 
       const snap = await getDoc(requestRef);
 
       if (snap.exists()) {
         const data = snap.data();
-
 
         setPayoutModal((prev) => ({
           ...prev,
@@ -294,7 +321,6 @@ const UserManagement = () => {
   };
   // const handleToggleExempt = async (userId, nextValue) => {
 
-
   //   const prevUsers = users;
   //   setTogglingExemptId(userId);
 
@@ -331,12 +357,12 @@ const UserManagement = () => {
       prev.map((u) =>
         u.id === userId
           ? {
-            ...u,
-            isExemptFromSubscription: nextValue,
-            _raw: { ...(u._raw || {}), isExemptFromSubscription: nextValue },
-          }
-          : u
-      )
+              ...u,
+              isExemptFromSubscription: nextValue,
+              _raw: { ...(u._raw || {}), isExemptFromSubscription: nextValue },
+            }
+          : u,
+      ),
     );
 
     try {
@@ -407,7 +433,12 @@ const UserManagement = () => {
   const handleCloseMeals = () => setMealsUser(null);
 
   const handleDelete = async (user) => {
-    if (!window.confirm(`Delete user "${user.name}" (${user.email})? This cannot be undone.`)) return;
+    if (
+      !window.confirm(
+        `Delete user "${user.name}" (${user.email})? This cannot be undone.`,
+      )
+    )
+      return;
     setLoading(true);
     try {
       await deleteDoc(doc(db, "users", user.id));
@@ -418,41 +449,44 @@ const UserManagement = () => {
       if (mealsUser?.id === user.id) setMealsUser(null);
     } catch (err) {
       console.error("[Delete] error:", err);
-      alert(err?.message || "Delete failed. Add `allow delete` in Firestore rules for `users`.");
+      alert(
+        err?.message ||
+          "Delete failed. Add `allow delete` in Firestore rules for `users`.",
+      );
     } finally {
       setLoading(false);
     }
   };
+
+
   const handleDeleteAffiliate = async (user) => {
-    if (!window.confirm(`Delete affiliate "${user.name}" (${user.email})? This cannot be undone.`)) return;
+    if (
+      !window.confirm(
+        `Delete affiliate "${user.name}" (${user.email})? This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+
     setAffiliatesLoading(true);
+
     try {
-      await deleteDoc(doc(db, "affiliates", user.id));
+      const deleteAffiliate = httpsCallable(functions, "deleteAffiliate");
+
+      await deleteAffiliate({
+        affiliateId: user.id,
+      });
+
       setAffiliates((prev) => prev.filter((u) => u.id !== user.id));
+
+      alert("Affiliate deleted successfully.");
     } catch (err) {
       console.error("[Delete Affiliate] error:", err);
-      alert(err?.message || "Delete failed. Add `allow delete` in Firestore rules for `affiliates`.");
+      alert(err?.message || "Failed to delete affiliate.");
     } finally {
       setAffiliatesLoading(false);
     }
   };
-  // const handlePayoutRequest = async (affiliateId, requestId, action) => {
-  //   try {
-  //     const respondAffiliatePayoutRequest = httpsCallable(
-  //       functions,
-  //       "respondAffiliatePayoutRequest"
-  //     );
-  //     const result = await respondAffiliatePayoutRequest({
-  //       affiliateId,
-  //       requestId,
-  //       action,
-  //     });
-
-  //     await fetchAffiliates();
-  //   } catch (error) {
-  //     console.error(error);
-  //   }
-  // };
   const handlePayoutRequest = async () => {
     const { affiliateId, requestId, action } = payoutModal;
     if (!affiliateId || !requestId || !action) return;
@@ -462,7 +496,7 @@ const UserManagement = () => {
 
       const respondAffiliatePayoutRequest = httpsCallable(
         functions,
-        "respondAffiliatePayoutRequest"
+        "respondAffiliatePayoutRequest",
       );
 
       await respondAffiliatePayoutRequest({
@@ -487,11 +521,15 @@ const UserManagement = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {payoutModal.action === "ACCEPT" ? "Accept Payout Request" : "Reject Payout Request"}
+                {payoutModal.action === "ACCEPT"
+                  ? "Accept Payout Request"
+                  : "Reject Payout Request"}
               </h3>
 
               {payoutModal.loading ? (
-                <p className="text-gray-500 py-6 text-center">Loading amount...</p>
+                <p className="text-gray-500 py-6 text-center">
+                  Loading amount...
+                </p>
               ) : (
                 <>
                   <p className="text-gray-600 mb-4">
@@ -521,10 +559,11 @@ const UserManagement = () => {
                 <button
                   onClick={handlePayoutRequest}
                   disabled={payoutModal.loading}
-                  className={`px-4 py-2 rounded-lg text-white font-medium ${payoutModal.action === "ACCEPT"
-                    ? "bg-green-700 hover:bg-green-800"
-                    : "bg-red-600 hover:bg-red-700"
-                    } disabled:opacity-50`}
+                  className={`px-4 py-2 rounded-lg text-white font-medium ${
+                    payoutModal.action === "ACCEPT"
+                      ? "bg-green-700 hover:bg-green-800"
+                      : "bg-red-600 hover:bg-red-700"
+                  } disabled:opacity-50`}
                 >
                   {payoutModal.loading
                     ? "Processing..."
@@ -537,12 +576,14 @@ const UserManagement = () => {
           </div>
         )}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">{activeTab === "user" ? "User Management " : "Affiliate User"}</h1>
+          <h1 className="text-2xl font-bold text-gray-800">
+            {activeTab === "user" ? "User Management " : "Affiliate User"}
+          </h1>
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                fetchUsers()
-                fetchAffiliates()
+                fetchUsers();
+                fetchAffiliates();
               }}
               disabled={loading}
               className="flex items-center gap-2 border px-4 py-2 rounded-lg hover:bg-gray-50 transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
@@ -555,7 +596,9 @@ const UserManagement = () => {
 
         {permissionDenied && (
           <div className="mb-4 bg-amber-50 border border-amber-200 text-amber-950 px-4 py-3 rounded-lg text-sm space-y-2">
-            <p className="font-semibold">Firestore: Missing or insufficient permissions</p>
+            <p className="font-semibold">
+              Firestore: Missing or insufficient permissions
+            </p>
             <pre className="text-xs bg-white border border-amber-200 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap text-gray-800">
               {FIRESTORE_RULES_SNIPPET}
             </pre>
@@ -574,13 +617,14 @@ const UserManagement = () => {
                 key={tab.key}
                 type="button"
                 onClick={() => {
-                  setSearchValue("")
-                  setActiveTab(tab.key)
+                  setSearchValue("");
+                  setActiveTab(tab.key);
                 }}
-                className={`relative py-3 text-sm font-medium transition ${activeTab === tab.key
-                  ? "text-indigo-600"
-                  : "text-gray-600 hover:text-gray-800"
-                  }`}
+                className={`relative py-3 text-sm font-medium transition ${
+                  activeTab === tab.key
+                    ? "text-indigo-600"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
               >
                 {tab.label}
                 {activeTab === tab.key && (
@@ -590,296 +634,409 @@ const UserManagement = () => {
             ))}
           </div>
         </div>
-        {activeTab === "user" ? <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
-            <input
-              type="text"
-              placeholder="Search by name or email..."
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              className="w-full md:max-w-md border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+        {activeTab === "user" ? (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                className="w-full md:max-w-md border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setFilter("all")}
-                className={`px-3 py-2 rounded-lg text-sm font-medium ${filter === "all" ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setFilter("all")}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                    filter === "all"
+                      ? "bg-indigo-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setFilter("active")}
-                className={`px-3 py-2 rounded-lg text-sm font-medium ${filter === "active" ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setFilter("active")}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                    filter === "active"
+                      ? "bg-indigo-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
-              >
-                Active
-              </button>
-              <button
-                onClick={() => setFilter("inactive")}
-                className={`px-3 py-2 rounded-lg text-sm font-medium ${filter === "inactive" ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                >
+                  Active
+                </button>
+                <button
+                  onClick={() => setFilter("inactive")}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                    filter === "inactive"
+                      ? "bg-indigo-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
-              >
-                Inactive
-              </button>
+                >
+                  Inactive
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">#</th>
-                  <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Name</th>
-                  <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Email</th>
-                  <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Status</th>
-                  <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Subscription</th>
-                  <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Expires at</th>
-                  <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Avg meals</th>
-                  <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Last login</th>
-                  <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Exempt Subscription</th>
-                  <th className="text-right text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredUsers.length > 0 ? (
-                  filteredUsers.filter((item) => item._raw?.role !== "admin").map((user, index) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-600">{index + 1}</td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-800">{user.name || "—"}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{user.email || "—"}</td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${user.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-200 text-gray-700"
-                            }`}
-                        >
-                          {user.status || "—"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {(() => {
-                          // const label = subscriptionStatusLabel(user.isSubscribed);
-                          const label = user?.subscriptionStatus
-                          const pill =
-                            label === "Active"
-                              ? "bg-emerald-100 text-emerald-800"
-                              : label === "Expired"
-                                ? "bg-amber-100 text-amber-800"
-                                : "bg-gray-100 text-gray-600";
-                          return (
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${pill}`}>{label}</span>
-                          );
-                        })()}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {subscriptionExpiresLabel(user.subscriptionExpiresAt)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {user.avgMealsPerDay || "N/A"}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {user.lastLogin || "N/A"}
-                      </td>
-                      {/* <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">
+                      #
+                    </th>
+                    <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">
+                      Name
+                    </th>
+                    <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">
+                      Email
+                    </th>
+                    <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">
+                      Status
+                    </th>
+                    <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">
+                      Subscription
+                    </th>
+                    <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">
+                      Expires at
+                    </th>
+                    <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">
+                      Avg meals
+                    </th>
+                    <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">
+                      Last login
+                    </th>
+                    <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">
+                      Exempt Subscription
+                    </th>
+                    <th className="text-right text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredUsers.length > 0 ? (
+                    filteredUsers
+                      .filter((item) => item._raw?.role !== "admin")
+                      .map((user, index) => (
+                        <tr key={user.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {index + 1}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-800">
+                            {user.name || "—"}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {user.email || "—"}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                user.status === "active"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-gray-200 text-gray-700"
+                              }`}
+                            >
+                              {user.status || "—"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            {(() => {
+                              // const label = subscriptionStatusLabel(user.isSubscribed);
+                              const label = user?.subscriptionStatus;
+                              const pill =
+                                label === "Active"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : label === "Expired"
+                                    ? "bg-amber-100 text-amber-800"
+                                    : "bg-gray-100 text-gray-600";
+                              return (
+                                <span
+                                  className={`px-2 py-1 text-xs font-medium rounded-full ${pill}`}
+                                >
+                                  {label}
+                                </span>
+                              );
+                            })()}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                            {subscriptionExpiresLabel(
+                              user.subscriptionExpiresAt,
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                            {user.avgMealsPerDay || "N/A"}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                            {user.lastLogin || "N/A"}
+                          </td>
+                          {/* <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                         {user.isExemptFromSubscription}
                       </td> */}
-                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {(() => {
-                          const isExempt = !!user._raw?.isExemptFromSubscription;
-                          return (
-                            <button
-                              type="button"
-                              role="switch"
-                              aria-checked={isExempt}
-                              disabled={loading || togglingExemptId === user.id}
-                              onClick={() => handleToggleExempt(user.id, !isExempt)}
-                              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${isExempt ? "bg-indigo-600" : "bg-gray-200"
-                                }`}
-                            >
-                              <span
-                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isExempt ? "translate-x-5" : "translate-x-0"
+                          <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                            {(() => {
+                              const isExempt =
+                                !!user._raw?.isExemptFromSubscription;
+                              return (
+                                <button
+                                  type="button"
+                                  role="switch"
+                                  aria-checked={isExempt}
+                                  disabled={
+                                    loading || togglingExemptId === user.id
+                                  }
+                                  onClick={() =>
+                                    handleToggleExempt(user.id, !isExempt)
+                                  }
+                                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                                    isExempt ? "bg-indigo-600" : "bg-gray-200"
                                   }`}
-                              />
-                            </button>
-                          );
-                        })()}
-                      </td>
+                                >
+                                  <span
+                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                      isExempt
+                                        ? "translate-x-5"
+                                        : "translate-x-0"
+                                    }`}
+                                  />
+                                </button>
+                              );
+                            })()}
+                          </td>
 
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1 flex-wrap">
-                          <button
-                            type="button"
-                            onClick={() => handleEdit(user)}
-                            disabled={loading}
-                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition disabled:opacity-50"
-                            title="Edit"
-                          >
-                            <Pencil size={18} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenChat(user)}
-                            disabled={loading}
-                            className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition disabled:opacity-50"
-                            title="Chat history (user ↔ assistant)"
-                          >
-                            <MessageCircle size={18} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenMeals(user)}
-                            disabled={loading}
-                            className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition disabled:opacity-50"
-                            title="Daily log meals"
-                          >
-                            <UtensilsCrossed size={18} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleView(user)}
-                            disabled={loading}
-                            className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition disabled:opacity-50"
-                            title="View details"
-                          >
-                            <Eye size={18} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(user)}
-                            disabled={loading}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
-                            title="Delete"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-1 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => handleEdit(user)}
+                                disabled={loading}
+                                className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition disabled:opacity-50"
+                                title="Edit"
+                              >
+                                <Pencil size={18} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenChat(user)}
+                                disabled={loading}
+                                className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition disabled:opacity-50"
+                                title="Chat history (user ↔ assistant)"
+                              >
+                                <MessageCircle size={18} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenMeals(user)}
+                                disabled={loading}
+                                className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition disabled:opacity-50"
+                                title="Daily log meals"
+                              >
+                                <UtensilsCrossed size={18} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleView(user)}
+                                disabled={loading}
+                                className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition disabled:opacity-50"
+                                title="View details"
+                              >
+                                <Eye size={18} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(user)}
+                                disabled={loading}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
+                                title="Delete"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="px-6 py-12 text-center text-gray-500 text-sm"
+                      >
+                        {loading
+                          ? "Loading…"
+                          : "No users in Firestore collection `users`."}
                       </td>
                     </tr>
-                  ))
-                ) : (
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                className="w-full md:max-w-md border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500 text-sm">
-                      {loading ? "Loading…" : "No users in Firestore collection `users`."}
-                    </td>
+                    <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">
+                      #
+                    </th>
+                    <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">
+                      Names
+                    </th>
+                    <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">
+                      Email
+                    </th>
+                    <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">
+                      Commission
+                    </th>
+                    <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">
+                      Status
+                    </th>
+                    <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">
+                      Code
+                    </th>
+                    <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">
+                      Branch Link
+                    </th>
+                    <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">
+                      Action
+                    </th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div> : <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
-            <input
-              type="text"
-              placeholder="Search by name or email..."
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              className="w-full md:max-w-md border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">#</th>
-                  <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Names</th>
-                  <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Email</th>
-                  <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Commission</th>
-                  <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Status</th>
-                  <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Code</th>
-                  <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Branch Link</th>
-                  <th className="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredAffiliates.length > 0 ? (
-                  filteredAffiliates.filter((item) => item._raw?.role !== "admin").map((user, index) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-600">{index + 1}</td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-800">{user.name || "—"}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{user.email || "—"}</td>
-                      <td className="px-6 py-4 text-sm  text-gray-800">${user.commissionAmount || "0"}</td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${user.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-200 text-gray-700"
-                            }`}
-                        >
-                          {user.status || "—"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {user.affiliateCode || "—"}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-indigo-600">
-                        {user.branchLink ? (
-                          <a
-                            href={user.branchLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:underline break-all"
-                          >
-                            {user.branchLink}
-                          </a>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-start gap-1 flex-wrap">
-                          {user?.payoutRequestStatus === "pending" && user?.payoutRequestId && <>
-                            <button
-                              // onClick={() =>
-                              //   handlePayoutRequest(
-                              //     user.id,
-                              //     user.payoutRequestId,
-                              //     "ACCEPT"
-                              //   )
-                              // }
-                              onClick={() => openPayoutModal(user.id, user.payoutRequestId, "ACCEPT")}
-                              className="px-4 py-1.5 rounded-lg bg-green-700 text-white text-sm font-medium hover:bg-green-700 transition-colors duration-200"
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredAffiliates.length > 0 ? (
+                    filteredAffiliates
+                      .filter((item) => item._raw?.role !== "admin")
+                      .map((user, index) => (
+                        <tr key={user.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {index + 1}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-800">
+                            {user.name || "—"}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {user.email || "—"}
+                          </td>
+                          <td className="px-6 py-4 text-sm  text-gray-800">
+                            ${user.commissionAmount || "0"}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                user.status === "active"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-gray-200 text-gray-700"
+                              }`}
                             >
-                              Accept
-                            </button>
+                              {user.status || "—"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                            {user.affiliateCode || "—"}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-indigo-600">
+                            {user.branchLink ? (
+                              <a
+                                href={user.branchLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:underline break-all"
+                              >
+                                {user.branchLink}
+                              </a>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-start gap-1 flex-wrap">
+                              {user?.payoutRequestStatus === "pending" &&
+                                user?.payoutRequestId && (
+                                  <>
+                                    <button
+                                      // onClick={() =>
+                                      //   handlePayoutRequest(
+                                      //     user.id,
+                                      //     user.payoutRequestId,
+                                      //     "ACCEPT"
+                                      //   )
+                                      // }
+                                      onClick={() =>
+                                        openPayoutModal(
+                                          user.id,
+                                          user.payoutRequestId,
+                                          "ACCEPT",
+                                        )
+                                      }
+                                      className="px-4 py-1.5 rounded-lg bg-green-700 text-white text-sm font-medium hover:bg-green-700 transition-colors duration-200"
+                                    >
+                                      Accept
+                                    </button>
 
-                            {/* Reject Button */}
-                            <button
-                              // onClick={() =>
-                              //   handlePayoutRequest(
-                              //     user.id,
-                              //     user.payoutRequestId,
-                              //     "REJECT"
-                              //   )
-                              // }
-                              onClick={() => openPayoutModal(user.id, user.payoutRequestId, "REJECT")}
-                              className="px-4 py-1.5 rounded-lg border border-red-200 bg-white text-red-600 text-sm font-medium hover:bg-red-50 hover:border-red-300 transition-colors duration-200"
-                            >
-                              Reject
-                            </button>
-                          </>}
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteAffiliate(user)}
-                            disabled={affiliatesLoading}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
-                            title="Delete"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
+                                    {/* Reject Button */}
+                                    <button
+                                      // onClick={() =>
+                                      //   handlePayoutRequest(
+                                      //     user.id,
+                                      //     user.payoutRequestId,
+                                      //     "REJECT"
+                                      //   )
+                                      // }
+                                      onClick={() =>
+                                        openPayoutModal(
+                                          user.id,
+                                          user.payoutRequestId,
+                                          "REJECT",
+                                        )
+                                      }
+                                      className="px-4 py-1.5 rounded-lg border border-red-200 bg-white text-red-600 text-sm font-medium hover:bg-red-50 hover:border-red-300 transition-colors duration-200"
+                                    >
+                                      Reject
+                                    </button>
+                                  </>
+                                )}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteAffiliate(user)}
+                                disabled={affiliatesLoading}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
+                                title="Delete"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="px-6 py-12 text-center text-gray-500 text-sm"
+                      >
+                        {affiliatesLoading
+                          ? "Loading…"
+                          : "No affiliates in Firestore collection `affiliates`."}
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500 text-sm">
-                      {affiliatesLoading ? "Loading…" : "No affiliates in Firestore collection `affiliates`."}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>}
+        )}
 
         {viewDetail && (
           <ViewUserModal
@@ -903,7 +1060,7 @@ const UserManagement = () => {
             onClose={handleCloseEditModal}
             onSaved={(updated) => {
               setUsers((prev) =>
-                prev.map((u) => (u.id === updated.id ? updated : u))
+                prev.map((u) => (u.id === updated.id ? updated : u)),
               );
             }}
           />
@@ -912,9 +1069,8 @@ const UserManagement = () => {
     );
   } else {
     // here  Affiliate
-    return <Affiliate />
+    return <Affiliate />;
   }
-
 };
 
 export default UserManagement;
