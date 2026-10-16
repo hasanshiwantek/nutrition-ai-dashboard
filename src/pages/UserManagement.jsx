@@ -6,6 +6,7 @@ import {
   Eye,
   MessageCircle,
   UtensilsCrossed,
+  Users,
 } from "lucide-react";
 import {
   collection,
@@ -167,6 +168,7 @@ const UserManagement = () => {
           };
         }),
       );
+
       // const rows = snap.docs.map(mapUserDocument);
       setUsers(rows);
     } catch (err) {
@@ -458,7 +460,6 @@ const UserManagement = () => {
     }
   };
 
-
   const handleDeleteAffiliate = async (user) => {
     if (
       !window.confirm(
@@ -511,6 +512,27 @@ const UserManagement = () => {
       console.error(error);
       alert(error?.message || "Something went wrong");
       setPayoutModal((prev) => ({ ...prev, loading: false }));
+    }
+  };
+  const handleRegisterAsAffiliate = async (user) => {
+    setLoading(true);
+    try {
+      const registerUserAsAffiliate = httpsCallable(
+        functions,
+        "registerUserAsAffiliate",
+      );
+
+      await registerUserAsAffiliate({
+        userId: user.id,
+      });
+
+      alert("User registered as affiliate successfully.");
+      await fetchAffiliates();
+    } catch (err) {
+      console.error("[Register Affiliate] error:", err);
+      alert(err?.message || "Failed to register user as affiliate.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -807,6 +829,19 @@ const UserManagement = () => {
 
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-1 flex-wrap">
+                              {!user?._raw?.registeredAsAffiliate && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleRegisterAsAffiliate(user)
+                                  }
+                                  disabled={loading}
+                                  className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition disabled:opacity-50"
+                                  title="Add Affiliate"
+                                >
+                                  <Users size={18} />
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => handleEdit(user)}

@@ -5,6 +5,7 @@ import { getFunctions, httpsCallable } from "firebase/functions";
 /**
  * Calls the `createAffiliate` Cloud Function to create a new affiliate user.
  */
+
 export const CreateAffiliate = ({ onClose, onSaved }) => {
   const [commission, setCommission] = useState("");
   const [saving, setSaving] = useState(false);
@@ -24,7 +25,6 @@ export const CreateAffiliate = ({ onClose, onSaved }) => {
       return setError("Password must be at least 6 characters.");
     if (commission !== "" && isNaN(Number(commission)))
       return setError("Commission must be a valid number.");
-
 
     const commissionValue = commission === "" ? null : Number(commission);
 
@@ -53,7 +53,8 @@ export const CreateAffiliate = ({ onClose, onSaved }) => {
     } catch (err) {
       console.error("[CreateAffiliate] error:", err);
       setError(
-        err?.message || "Failed to create affiliate. Check Cloud Function logs."
+        err?.message ||
+          "Failed to create affiliate. Check Cloud Function logs.",
       );
     } finally {
       setSaving(false);
@@ -104,7 +105,9 @@ export const CreateAffiliate = ({ onClose, onSaved }) => {
             />
           </div>
           <div>
-            <label className="text-sm text-gray-600 font-medium">Password</label>
+            <label className="text-sm text-gray-600 font-medium">
+              Password
+            </label>
             <input
               type="password"
               value={password}
