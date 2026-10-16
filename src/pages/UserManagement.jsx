@@ -34,7 +34,7 @@ import { toDisplayDate } from "../lib/userDocumentDisplay";
 import { useAuthGuard } from "../hooks/useAuthGuard";
 import Affiliate from "./Affiliate";
 import { useSelector } from "react-redux";
-import { getFunctions, httpsCallable } from "firebase/functions";
+import { httpsCallable } from "firebase/functions";
 
 function mapUserDocument(docSnap) {
   const d = docSnap.data() || {};
